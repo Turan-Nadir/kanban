@@ -6,7 +6,7 @@ require('dotenv').config();
 app.set('view engine', 'ejs');
 app.use(bodyParser.json()).use(bodyParser.urlencoded({extended:true}));
 const url = process.env.DBURL;
-mongoose.connect('mongodb://localhost/kanban')
+mongoose.connect(url)
   .then(()=>{console.log("Connected to mongodb!")})
   .catch(err => console.log('error happened', err));
 app.use('/', todo);
