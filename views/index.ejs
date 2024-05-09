@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban To-Do List</title>
+    <style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #262626;
+}
+
+.task-form {
+    background-color: #424242;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 20px;
+    display: flex; /* Align children horizontally */
+    justify-content: center; /* Center children horizontally */
+    flex-wrap: wrap; /* Allow wrapping if necessary */
+}
+
+.task-form h2 {
+    color: #fff;
+    margin-right: 30px;
+}
+.task-form form {
+    display: flex;
+    flex-direction: row; /* Align form elements horizontally */
+    flex-wrap: wrap; /* Allow wrapping if necessary */
+    justify-content: center; /* Center form elements horizontally */
+    align-items: center; /* Center form elements vertically */
+    gap: 10px; /* Add spacing between form elements */
+}
+
+.task-form label {
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.task-form input[type="text"],
+.task-form input[type="time"],
+.task-form button[type="submit"] {
+    margin-bottom: 10px;
+}
+.task-form input[type="time"]::-webkit-datetime-edit-fields-wrapper::after {
+    content: url('data:image/svg+xml;utf8,<svg fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M13 3H11v9l5.25 3.15.75-1.23-4.5-2.67V3z"/></svg>'); /* White time icon */
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    pointer-events: none; /* Prevent icon from being clickable */
+}
+.task-form input[type="text"],
+.task-form input[type="time"] {
+    
+    padding: 8px;
+    border-radius: 3px;
+    color: #fff;
+    background-color: #262626;
+    border: 1px solid #ccc;
+}
+
+.task-form button[type="submit"] {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 15px;
+    cursor: pointer;
+}
+
+.task-form button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+.kanban-board {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.column {
+    flex: 1;
+    background-color: #424242;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.task-card {
+    background-color: #424242;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.task-card h3 {
+    margin-top: 0;
+}
+
+.info-button, .move-button, .delete-button, .popup-close {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.info-button:hover, .move-button:hover, .delete-button:hover {
+    background-color: #0056b3;
+}
+.popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #424242; /* special background */
+            color: #fff; /* white text */
+            padding: 40px;
+            border-radius: 10px;
+            z-index: 999; /* ensure the popup is above other elements */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); /* add shadow for depth */
+            width: 80%; /* set width to 80% of the viewport */
+            max-width: 500px; /* limit maximum width */
+        }
+
+        .blur-background {
+            filter: blur(5px); /* apply blur effect to the background */
+        }
+        /* Adjust height of column to fit its content */
+        .pending, .in-progress, .completed {
+        max-height: 100%; /* Limit maximum height of each column */
+        overflow-y: auto; /* Enable vertical scrolling if content exceeds height */
+        }
+    </style> 
+</head>
+<body>
+<div id="board">
+    <div class="task-form">
+        <h2>Add New Task</h2>
+        <form action="/addTask" method="POST">
+            <label for="taskName">Task Name:</label>
+            <input type="text" id="name" name="taskName" required>
+            <br>
+            <label for="taskDuration">Task Duration:</label>
+            <input type="time" id="start" name="beginning">
+            <br>
+            <input type="time" id="end" name="ending">
+            <br>
+            <button type="submit">Add Task</button>
+        </form>
+    </div>
+
+    <div class="kanban-board">
+        <div class="column pending" style="margin: 10px;">
+            <h2 style="color: #fff;">Pending</h2>
+            <!-- Task Cards for Pending Tasks -->
+            <% pendingTasks.forEach(task => { %>
+                <div class="task-card">
+                    <h3><%= task.name %></h3>
+                    <div style="display: flex;">
+                        <button class="info-button" onclick="showInfoPopup('<%= task.name %>', '<%= task.createdAt %>', '<%= task.end %>', '<%= task.finishedAt %>')">Info</button>
+                        <form action="/<%= task.status %>" method="post"> 
+                            <input type="hidden" name="taskId" value="<%= task._id %>"> 
+                            <button type="submit" class="info-button" >Move to In Progress</button>
+                          </form> 
+                          <form action="/delete" method="post"> 
+                            <input type="hidden" name="taskId" value="<%= task._id %>"> 
+                            <button type="submit" class="info-button" >Delete</button>
+                          </form> 
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+        <div class="column in-progress" style="margin: 10px;">
+            <h2 style="color: #fff;">In Progress</h2>
+            <!-- Task Cards for In Progress Tasks -->
+            <% inProgressTasks.forEach(task => { %>
+                <div class="task-card" >
+                    <h3><%= task.name %></h3>
+                    <div style="display: flex;">
+                        <button class="info-button" onclick="showInfoPopup('<%= task.name %>', '<%= task.createdAt %>', '<%= task.end %>', '<%= task.finishedAt %>')">Info</button>
+                        <form action="/<%= task.status %>" method="post"> 
+                            <input type="hidden" name="taskId" value="<%= task._id %>"> 
+                            <button type="submit" class="info-button" >Move to Completed</button>
+                          </form> 
+                          <form action="/delete" method="post"> 
+                            <input type="hidden" name="taskId" value="<%= task._id %>"> 
+                            <button type="submit" class="info-button" >Delete</button>
+                          </form>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+        <div class="column completed" style="margin: 10px;">
+            <h2 style="color: #fff;">Completed</h2>
+            <!-- Task Cards for Completed Tasks -->
+            <% completedTasks.forEach(task => { %>
+                <div class="task-card" >
+                    <h3><%= task.name %></h3>
+                    <div style="display: flex;">
+                        <button class="info-button" onclick="showInfoPopup('<%= task.name %>', '<%= task.createdAt %>', '<%= task.end %>', '<%= task.finishedAt %>')">Info</button>
+                        <form action="/delete" method="post"> 
+                            <input type="hidden" name="taskId" value="<%= task._id %>"> 
+                            <button type="submit" class="info-button" >Delete</button>
+                          </form>
+                    </div>
+                    </div>
+            <% }); %>
+        </div>
+    </div> 
+ </div>
+<div id="taskInfoPopup" class="popup">
+    <button id="taskInfoClose" class="popup-close" onclick="closeInfoPopup()" style="margin-left: 100%;">&times;</button>
+    <h2 id="taskInfoName"></h2>
+    <p><strong>Created At:</strong> <span id="taskInfoCreatedAt"></span></p>
+    <p><strong>Deadline:</strong> <span id="taskInfoDeadline"></span></p>
+    <p><strong>Finished date:</strong> <span id="finishedAt"></span></p>
+
+</div>
+
+<script>
+    // Function to show task info popup
+    function showInfoPopup(name, createdAt, ending, finishedAt) {
+        const popup = document.getElementById("taskInfoPopup");
+        const board = document.getElementById("board");
+        const nameElement = document.getElementById("taskInfoName");
+        const createdAtElement = document.getElementById("taskInfoCreatedAt");
+        const deadlineElement = document.getElementById("taskInfoDeadline");
+        const finishDate = document.getElementById("finishedAt");
+
+        nameElement.textContent = name;
+        createdAtElement.textContent = createdAt;
+        deadlineElement.textContent = ending;
+        finishDate.textContent = finishedAt;
+        board.classList.add("blur-background"); // Blur the background
+        popup.style.display = "block"; // Set display property to "block" to show the popup
+    }
+    // Function to close task info popup
+    function closeInfoPopup() {
+        const popup = document.getElementById("taskInfoPopup");
+        const board = document.getElementById("board");
+        popup.style.display ="none"; // Remove class to hide popup
+        board.classList.remove("blur-background"); // Remove blur from background
+    }
+</script>
+</body>
+</html>
